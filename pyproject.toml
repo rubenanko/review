@@ -1,0 +1,7 @@
+[project]
+name = "rv"
+version = "0.1.0"
+dependencies = [pygments, difflib]
+
+[project.scripts]
+rv = "rv.cli:main"

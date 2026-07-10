@@ -1,0 +1,69 @@
+from typing import List
+from os import environ
+from sys import exit as sys_exit
+from rv.core.tui.components import LOG_ERROR, LOG_WARNING, LOG_DEV_WARNING
+import rv.core.tui.components
+from enum import Enum
+
+# exception types
+class ExceptionType(Enum):
+    ERROR = 0
+    WARNING = 1
+
+# function allowing default exception handling
+def make_safe(function : callable, resolve : callable = None) -> callable:
+    def safe_function(*args : any):
+        try:
+            return function(*args)
+
+        except __RV_Exception as exception:
+            match exception.exception_type:
+                case ExceptionType.ERROR:
+                    LOG_ERROR(exception)
+
+                case ExceptionType.WARNING:
+                    LOG_WARNING(exception)
+
+                case _:
+                    LOG_DEV_WARNING(exception)
+                    sys_exit(1)
+                
+            if exception.is_fatal:
+                sys_exit(1)
+            elif resolve != None:
+                return resolve(exception)
+
+        except Exception as exception: 
+            LOG_ERROR(f"The following error occured : {exception}")
+            sys_exit(1)
+
+    return safe_function
+
+class __RV_Exception(Exception):
+    def __init__(self : Exception, message : str,exception_type = ExceptionType.ERROR, is_fatal: bool = True) -> Exception:
+        super().__init__(message)
+        self.message = message
+        self.exception_type = exception_type
+        self.is_fatal = is_fatal
+
+    def __str__(self) -> str:
+        return self.message
+
+class ModuleNotFoundException(__RV_Exception):
+    def __init__(self,module_name : str):
+        super().__init__(rv.core.tui.components.MODULE_NOT_FOUND_MESSAGE(module_name),
+                        ExceptionType.ERROR)
+        self.module_name = module_name
+
+class ModuleEntryPointNotFoundException(__RV_Exception):
+    def __init__(self,module_name : str):
+        super().__init__(rv.core.tui.components.MODULE_ENTRYPOINT_NOT_FOUND_MESSAGE(module_name),
+                        ExceptionType.ERROR)
+
+class SystemCallErrorException(__RV_Exception):
+    pass
+
+class PathDoesNotExistException(__RV_Exception):
+    def __init__(self,path : str):
+        super().__init__(rv.core.tui.components.PATH_DOES_NOT_EXIST_MESSAGE(path),
+                        ExceptionType.ERROR)
