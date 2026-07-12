@@ -65,7 +65,7 @@ class File:
         # max_similarity = 0
         target_line_index = None
         for i in range(len(self.lines)):
-            if text in self.lines[i]:
+            if text in self.lines[i].lower():
                 target_line_index = i
                 break
             # similarity = SequenceMatcher(None,text,self.lines[i]).ratio()
@@ -74,37 +74,9 @@ class File:
             #     target_line_index = i
 
         if target_line_index == None:
-            return ""
-        fragment_buffer = self.highlighted_lines[target_line_index]
+            return None
 
-        target_indentation = get_indentation(self.lines[target_line_index])
-        index = target_line_index-1
-        stop = False
-        while index >= 0 and not stop:
-            fragment_buffer = f'{self.highlighted_lines[index]}\n{fragment_buffer}'
-            indentation = get_indentation(self.lines[index])
-
-            if is_blank_line(self.lines[index]):
-                if index-1 >= 0 and get_indentation(self.lines[index-1]) <= target_indentation:
-                    stop = True
-                
-            stop = stop or indentation < target_indentation
-            index -= 1
-
-        index = target_line_index+1
-        stop = False
-        while index < self.number_of_lines and not stop:
-            fragment_buffer = f'{fragment_buffer}\n{self.highlighted_lines[index]}'
-            indentation = get_indentation(self.lines[index])
-
-            if is_blank_line(self.lines[index]):
-                if index+1 < self.number_of_lines and get_indentation(self.lines[index+1]) <= target_indentation:
-                    stop = True
-                
-            stop = stop or indentation != 0 and indentation < target_indentation
-            index += 1
-
-        return fragment_buffer
+        return Fragment(self, target_line_index)
 
     def get_line_number_of_char_index(self,char_index : int):
         # Count how many newlines happened BEFORE this character index
@@ -113,3 +85,57 @@ class File:
 
     def get_functions(self) -> Set[str]:
        return set([(value,self.get_line_number_of_char_index(index)) for index, token_type, value in self.lexer.get_tokens_unprocessed(self.buffer) if token_type in Token.Name.Function])
+
+
+class Fragment:
+    def __init__(self, file, baseline : int):
+        self.file = file
+        self.baseline = baseline
+        self._highlighted_buffer = None
+        self._buffer = None
+        self.firstline = baseline
+        self.lastline = baseline
+        self.expand()
+
+    @property
+    def buffer(self) -> str:
+        if self._buffer == None:
+            self._buffer = "\n".join(self.file.lines[self.firstline:self.lastline])
+
+        return self._buffer
+
+    @property
+    def highlighted_buffer(self) -> str:
+        if self._highlighted_buffer == None:
+            self._highlighted_buffer = "\n".join(self.file.highlighted_lines[self.firstline:self.lastline])
+
+        return self._highlighted_buffer
+
+    def expand(self) -> None:
+        base_indentation = get_indentation(self.file.lines[self.baseline])
+        
+        index = self.baseline-1
+        stop = False
+        while index >= 0 and not stop:
+            self.firstline -= 1
+            indentation = get_indentation(self.file.lines[index])
+
+            if is_blank_line(self.file.lines[index]):
+                if index-1 >= 0 and get_indentation(self.file.lines[index-1]) <= base_indentation:
+                    stop = True
+                
+            stop = stop or indentation < base_indentation
+            index -= 1
+
+        index = self.baseline+1
+        stop = False
+        while index < self.file.number_of_lines and not stop:
+            self.lastline += 1
+            indentation = get_indentation(self.file.lines[index])
+
+            if is_blank_line(self.file.lines[index]):
+                if index+1 < self.file.number_of_lines and get_indentation(self.file.lines[index+1]) <= base_indentation:
+                    stop = True
+                
+            stop = stop or indentation != 0 and indentation < base_indentation
+            index += 1
