@@ -39,7 +39,9 @@ def entrypoint(argv: List[str]) -> None:
 
     # print(file.highlighted_buffer)
     if fuzzy_expression:
-        print(file.find_fragment(fuzzy_expression))
+        fragment = file.find_fragment(fuzzy_expression.lower())
+        if fragment != None:
+            print(fragment.highlighted_buffer)
     else:
         print(file.highlighted_buffer)
     print(f"\n{file.filename}")
