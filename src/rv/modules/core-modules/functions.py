@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+from difflib import SequenceMatcher
 from typing import List
 
 from rv.core.Files import File
@@ -19,6 +20,13 @@ def entrypoint(argv: List[str]) -> None:
     parser.add_argument(
         "file_alias", help="", type=str
     )
+    parser.add_argument(
+        "filter_pattern", 
+        nargs='?',
+        help="Filter functions by fuzzy name matching (optional)", 
+        type=str, 
+        default=None
+    )
 
     # parse argv
     args = parser.parse_args(argv)
@@ -28,6 +36,16 @@ def entrypoint(argv: List[str]) -> None:
     functions = file.get_functions()
     functions_names = [name for name,_ in functions]
     functions_lines_index = [index for _,index in functions]
+
+    # Apply fuzzy filter if provided
+    if args.filter_pattern:
+        filtered_indices = []
+        for i, name in enumerate(functions_names):
+            similarity = SequenceMatcher(None, args.filter_pattern.lower(), name.lower()).ratio()
+            if similarity > 0.3:  # Threshold for fuzzy matching
+                filtered_indices.append(i)
+        functions_names = [functions_names[i] for i in filtered_indices]
+        functions_lines_index = [functions_lines_index[i] for i in filtered_indices]
 
     buffer = ""
     # format output -> ls style
@@ -50,4 +68,4 @@ def entrypoint(argv: List[str]) -> None:
     #     buffer = "".join(formatted_functions_names)
 
     # print(buffer + "\n")
-    print(f"\nDisplaying {len(functions)} functions")
+    print(f"\nDisplaying {len(functions_names)} functions")
