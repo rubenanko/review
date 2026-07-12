@@ -45,7 +45,7 @@ class File:
             with open(filename,"r") as f:
                 self.buffer = f.read()
 
-            self.highlighted_buffer = highlight(self.buffer,self.lexer,Terminal256Formatter(style="monokai"))
+            self.highlighted_buffer = highlight(self.buffer,self.lexer,Terminal256Formatter(style="gruvbox-dark"))
             self.lines = self.buffer.split("\n")
             self.highlighted_lines = self.highlighted_buffer.split("\n")
             self.number_of_lines = len(self.lines)

@@ -23,7 +23,7 @@ def entrypoint(argv: List[str]) -> None:
     parser.add_argument(
         "filter_pattern", 
         nargs='?',
-        help="Filter functions by fuzzy name matching (optional)", 
+        help="Filter functions by name inclusion or fuzzy matching on signature", 
         type=str, 
         default=None
     )
@@ -37,13 +37,24 @@ def entrypoint(argv: List[str]) -> None:
     functions_names = [name for name,_ in functions]
     functions_lines_index = [index for _,index in functions]
 
-    # Apply fuzzy filter if provided
+    # Apply filter if provided
     if args.filter_pattern:
         filtered_indices = []
+        pattern_lower = args.filter_pattern.lower()
+        
+        #First pass: check if pattern is included in function names
         for i, name in enumerate(functions_names):
-            similarity = SequenceMatcher(None, args.filter_pattern.lower(), name.lower()).ratio()
-            if similarity > 0.3:  # Threshold for fuzzy matching
+            if pattern_lower in name.lower():
                 filtered_indices.append(i)
+        
+        # If no matches, do fuzzy matching on the entire function line (signature)
+        if not filtered_indices:
+            for i, line_index in enumerate(functions_lines_index):
+                line = file.lines[line_index]
+                similarity = SequenceMatcher(None, pattern_lower, line.lower()).ratio()
+                if similarity > 0.15:  # Threshold for fuzzy matching
+                    filtered_indices.append(i)
+        
         functions_names = [functions_names[i] for i in filtered_indices]
         functions_lines_index = [functions_lines_index[i] for i in filtered_indices]
 
