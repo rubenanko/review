@@ -80,3 +80,5 @@ def entrypoint(argv: List[str]) -> None:
 
     # print(buffer + "\n")
     print(f"\nDisplaying {len(functions_names)} functions")
+    print(f"\n{file.filename}")
+

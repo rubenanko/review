@@ -17,6 +17,7 @@ class File:
         self.highlighted_buffer = ""
         self.lines = None
         self.highlighted_lines = None
+        self.number_of_highlighted_lines = 0
         self.number_of_lines = 0
         self.max_number_of_digits = 0
         self.line_breaks = None
@@ -49,9 +50,10 @@ class File:
             self.lines = self.buffer.split("\n")
             self.highlighted_lines = self.highlighted_buffer.split("\n")
             self.number_of_lines = len(self.lines)
-            self.max_number_of_digits = get_number_of_digits(self.number_of_lines)
+            self.number_of_highlighted_lines = len(self.highlighted_lines)
+            self.max_number_of_digits = get_number_of_digits(self.number_of_highlighted_lines)
 
-            for i in range(self.number_of_lines):
+            for i in range(self.number_of_highlighted_lines):
                 self.highlighted_lines[i] = f'{i+1}{" "*(self.max_number_of_digits-get_number_of_digits(i+1))} ~ {self.highlighted_lines[i]}'
                 self.highlighted_buffer = "\n".join(self.highlighted_lines)
 
